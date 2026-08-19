@@ -1,0 +1,50 @@
+Overall Plan
+Phase	What	Status
+0	Install Docker Desktop	🔲 You're doing this now
+1	Project folders + Docker Compose (Redis+Postgres)	✅ Built
+2	Backend: DB schema (Prisma)	✅ Built
+3	Backend: Queue + Rate Limiter + Worker	✅ Built
+4	Backend: Express API routes (schedule/list emails)	🔲 Next
+5	Backend: Google OAuth login endpoint	🔲 Todo
+6	Frontend: Next.js setup + Tailwind	🔲 Todo
+7	Frontend: Google login page + dashboard shell	🔲 Todo
+8	Frontend: Compose modal + CSV upload	🔲 Todo
+9	Frontend: Scheduled/Sent tables	🔲 Todo
+10	README + push to GitHub	🔲 Todo
+11	Record demo video	🔲 Todo
+✅ Steps after Docker install (do these now)
+
+1. Verify Docker works — open terminal:
+
+bash
+docker --version
+docker run hello-world
+
+Should print a version number and download a test image successfully.
+
+2. Get the code I've built so far. Just tell me "give me the zip" and I'll package everything (Docker Compose file, Prisma DB schema, queue, rate limiter, worker, .env.example) into a downloadable zip. Unzip it into your reachinbox-scheduler/ folder, replacing/merging with the backend/ and frontend/ folders you made.
+
+3. Start Redis + Postgres — from inside reachinbox-scheduler/ folder in terminal:
+
+bash
+docker compose up -d
+
+This starts both databases in the background. Check they're running:
+
+bash
+docker ps
+
+You should see reachinbox_redis and reachinbox_postgres listed.
+
+4. Install backend dependencies:
+
+bash
+cd backend
+npm install
+
+5. Set up your .env file:
+
+bash
+cp .env.example .env
+
+(We'll fill in real values — like Ethereal creds — together when we get ther

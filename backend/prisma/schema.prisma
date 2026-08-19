@@ -1,0 +1,84 @@
+// Prisma schema for ReachInbox Email Scheduler
+// Run `npm run prisma:migrate` after setting DATABASE_URL in .env
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum JobStatus {
+  PENDING     // created, waiting for its BullMQ delayed job to fire
+  SCHEDULED   // BullMQ job has been enqueued with a delay
+  RATE_LIMITED // hit hourly cap, pushed to next window
+  SENT
+  FAILED
+}
+
+// A logged-in user (via Google OAuth)
+model User {
+  id        String     @id @default(uuid())
+  googleId  String     @unique
+  email     String     @unique
+  name      String
+  avatarUrl String?
+  createdAt DateTime   @default(now())
+  campaigns Campaign[]
+}
+
+// A sending identity (Ethereal test account). Multiple senders let us
+// demonstrate per-sender rate limiting / round robin sending.
+model Sender {
+  id        String   @id @default(uuid())
+  name      String
+  smtpHost  String
+  smtpPort  Int
+  smtpUser  String
+  smtpPass  String
+  createdAt DateTime @default(now())
+  emailJobs EmailJob[]
+}
+
+// One "compose & schedule" action = one Campaign, containing many EmailJobs
+// (one per recipient uploaded via CSV).
+model Campaign {
+  id                   String   @id @default(uuid())
+  userId               String
+  user                 User     @relation(fields: [userId], references: [id])
+  subject              String
+  body                 String   @db.Text
+  startTime            DateTime // when sending should begin
+  delayBetweenEmailsMs Int      // min gap between individual sends
+  hourlyLimit          Int      // max emails/hour for this campaign
+  createdAt            DateTime @default(now())
+  emailJobs            EmailJob[]
+}
+
+// One row per recipient email. This is the source of truth for status.
+// bullJobId is unique -> guarantees we never enqueue the same job twice
+// (idempotency), even if the API is called again or the server restarts.
+model EmailJob {
+  id            String    @id @default(uuid())
+  campaignId    String
+  campaign      Campaign  @relation(fields: [campaignId], references: [id])
+  senderId      String?
+  sender        Sender?   @relation(fields: [senderId], references: [id])
+  recipient     String
+  subject       String
+  body          String    @db.Text
+  status        JobStatus @default(PENDING)
+  scheduledFor  DateTime  // the time this email is currently planned to send
+  sentAt        DateTime?
+  bullJobId     String?   @unique // links this row to its BullMQ delayed job
+  attempts      Int       @default(0)
+  lastError     String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([status])
+  @@index([campaignId])
+  @@index([scheduledFor])
+}
