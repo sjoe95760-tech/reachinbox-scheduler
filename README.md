@@ -1,4 +1,4 @@
-markdown
+
 # ReachInbox Scheduler
 
 A full-stack email job scheduler: schedule bulk emails via a dashboard, send them at the right time using BullMQ delayed jobs (no cron), survive server restarts, and enforce configurable rate limits.
